@@ -1,5 +1,6 @@
 #include "ip_types.h"
 #include "routing.h"
+#include "packet_soa.h"
 #include <iostream>
 #include <chrono>
 #include <omp.h>
@@ -10,6 +11,7 @@
 std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
 void forward_packets_cpu_parallel(std::vector<Packet>&, const std::vector<RouteEntry>&);
+PacketSoA aos_to_soa(const std::vector<Packet>& packets);
 
 int main()
 {
@@ -20,8 +22,10 @@ int main()
         { 0, 0, 3 } // default route
     };
 
-    auto packetsSerial = generate_packets(N_Packets);
-    std::vector<Packet> packetsParallel = packetsSerial;
+    auto packets = generate_packets(N_Packets);
+
+    std::vector<Packet> packetsSerial = packets;
+    std::vector<Packet> packetsParallel = packets;
 
     // --- Serial Part --- 
     auto startSerial = std::chrono::high_resolution_clock::now();
@@ -53,9 +57,19 @@ int main()
     std::cout << "CPU Parallel forwarding time: " << msParallel << " ms" << std::endl;
     // --- End Parallel Part
 
-    // Check for see if the output operations was the same between the two type of operations
-    for(size_t i = 0; i < packetsSerial.size(); i++)
+    // --- GPU part (for now only SOA part)
+    PacketSoA soa = aos_to_soa(packets);
+
+    // Check operations
+    for(size_t i = 0; i < packets.size(); i++)
+    {
+        // Check the serial and parallel packets was the same
         assert(packetsSerial[i].out_if == packetsParallel[i].out_if);
+        // Check the correct creatio of the SOA object
+        assert(soa.ttl[i] == packets[i].hdr.ttl);
+        assert(soa.out_if[i] == packets[i].out_if);
+        assert(soa.dst_ip[i] == ntohl(packets[i].hdr.dst_ip));
+    }
 
     return 0;
 }
