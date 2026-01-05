@@ -1,5 +1,6 @@
 #include "ip_types.h"
 #include "routing.h"
+#include <omp.h>
 
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable)
 {
@@ -34,4 +35,12 @@ void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable)
     }
 
     p.out_if = rtable[route_idx].out_if;
+}
+
+void forward_packets_cpu_parallel(std::vector<Packet>& packets, const std::vector<RouteEntry>& rtable)
+{
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < packets.size(); i++) {
+        forward_packet_cpu(packets[i], rtable);
+    }
 }
