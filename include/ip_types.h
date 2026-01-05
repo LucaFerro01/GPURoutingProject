@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstring>
-#include <winsock.h>
+#include <arpa/inet.h>
 
 // IPv4 header is 20 bytes without options
 #pragma pack(push,1)

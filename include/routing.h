@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include <winsock.h>
+#include <arpa/inet.h>
 
 struct RouteEntry {
     uint32_t prefix;       // network prefix (host order)

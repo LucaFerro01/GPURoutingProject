@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include)
 
 add_executable(gpu_router
-    src/main.cpp
-    src/packet_generator.cpp
-    src/forward_cpu.cpp
+    source/main.cpp
+    source/packet_generator.cpp
+    source/forward_cpu.cpp
 )
