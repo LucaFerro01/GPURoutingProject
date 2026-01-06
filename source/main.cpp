@@ -12,6 +12,7 @@ std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
 void forward_packets_cpu_parallel(std::vector<Packet>&, const std::vector<RouteEntry>&);
 PacketSoA aos_to_soa(const std::vector<Packet>& packets);
+// void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
 
 int main()
 {
@@ -59,6 +60,9 @@ int main()
 
     // --- GPU part (for now only SOA part)
     PacketSoA soa = aos_to_soa(packets);
+    // gpu_forward(soa, rtable);
+
+
 
     // Check operations
     for(size_t i = 0; i < packets.size(); i++)

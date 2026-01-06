@@ -13,6 +13,7 @@ add_executable(gpu_router
     source/packet_generator.cpp
     source/forward_cpu.cpp
     source/aos_to_soa.cpp
+    # source/gpu_runtime.cpp
 )
 
 target_link_libraries(gpu_router PUBLIC OpenMP::OpenMP_CXX)
