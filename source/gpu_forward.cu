@@ -1,3 +1,4 @@
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include "routing_device.h"
 
@@ -43,7 +44,7 @@ __global__ void forward_kernel(
     ttl[i] -= 1;
 
     // Recompute checksum (simplified model)
-    checksum[i] = simple_checksum(dst_ip[i], ttl[i]);
+    checksum[i] = simpleChecksum(dst_ip[i], ttl[i]);
 
     // Longest Prefix Match
     int best = -1;

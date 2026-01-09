@@ -1,8 +1,19 @@
 #include "packet_soa.h"
 #include "routing_device.h"
+#include "routing.h"
 #include <cuda_runtime.h>
 #include <vector>
 #include <iostream>
+
+__global__ void forward_kernel(
+    const uint32_t* dst_ip,
+    uint8_t* ttl,
+    uint16_t* checksum,
+    int* out_if,
+    const RouteEntryDevice* rtable,
+    int rtable_size,
+    int N
+);
 
 void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
 {

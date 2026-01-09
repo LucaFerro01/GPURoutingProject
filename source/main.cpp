@@ -6,13 +6,13 @@
 #include <omp.h>
 #include <cassert>
 
-#define N_Packets 1000000
+#define N_Packets 100000
 
 std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
 void forward_packets_cpu_parallel(std::vector<Packet>&, const std::vector<RouteEntry>&);
 PacketSoA aos_to_soa(const std::vector<Packet>& packets);
-// void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
+void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
 
 int main()
 {
@@ -59,8 +59,13 @@ int main()
     // --- End Parallel Part
 
     // --- GPU part (for now only SOA part)
+    auto startGPU = std::chrono::high_resolution_clock::now();
     PacketSoA soa = aos_to_soa(packets);
-    // gpu_forward(soa, rtable);
+    gpu_forward(soa, rtable);
+    auto endGPU = std::chrono::high_resolution_clock::now();
+    double msGPU = std::chrono::duration<double, std::milli>(endGPU - startGPU).count();
+    std::cout << "GPU forwarding total time (incl. mem transfer): " << msGPU << " ms" << std::endl;
+    // --- End GPU part
 
 
 
@@ -69,10 +74,10 @@ int main()
     {
         // Check the serial and parallel packets was the same
         assert(packetsSerial[i].out_if == packetsParallel[i].out_if);
-        // Check the correct creatio of the SOA object
-        assert(soa.ttl[i] == packets[i].hdr.ttl);
-        assert(soa.out_if[i] == packets[i].out_if);
-        assert(soa.dst_ip[i] == ntohl(packets[i].hdr.dst_ip));
+        // Check GPU result matches CPU serial result
+        assert(soa.out_if[i] == packetsSerial[i].out_if);
+        assert(soa.ttl[i] == packetsSerial[i].hdr.ttl);
+        assert(soa.dst_ip[i] == ntohl(packetsSerial[i].hdr.dst_ip));
     }
 
     return 0;
