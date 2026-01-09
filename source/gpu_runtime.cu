@@ -4,6 +4,18 @@
 #include <cuda_runtime.h>
 #include <vector>
 #include <iostream>
+#include <cstdlib>
+
+// Macro per controllare errori CUDA
+#define CUDA_CHECK(call) \
+    do { \
+        cudaError_t err = call; \
+        if (err != cudaSuccess) { \
+            std::cerr << "CUDA Error in " << __FILE__ << ":" << __LINE__ \
+                      << " - " << cudaGetErrorString(err) << std::endl; \
+            exit(EXIT_FAILURE); \
+        } \
+    } while (0)
 
 __global__ void forward_kernel(
     const uint32_t* dst_ip,
@@ -26,55 +38,58 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     int*      d_out_if;
     RouteEntryDevice* d_rtable;
 
-    cudaMalloc(&d_dst_ip,    N * sizeof(uint32_t));
-    cudaMalloc(&d_ttl,       N * sizeof(uint8_t));
-    cudaMalloc(&d_checksum,  N * sizeof(uint16_t));
-    cudaMalloc(&d_out_if,    N * sizeof(int));
-    cudaMalloc(&d_rtable,    rtable.size() * sizeof(RouteEntryDevice));
+    CUDA_CHECK(cudaMalloc(&d_dst_ip,    N * sizeof(uint32_t)));
+    CUDA_CHECK(cudaMalloc(&d_ttl,       N * sizeof(uint8_t)));
+    CUDA_CHECK(cudaMalloc(&d_checksum,  N * sizeof(uint16_t)));
+    CUDA_CHECK(cudaMalloc(&d_out_if,    N * sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&d_rtable,    rtable.size() * sizeof(RouteEntryDevice)));
 
     // --- Copy packet data ---
-    cudaMemcpy(d_dst_ip, soa.dst_ip.data(), N * sizeof(uint32_t), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_ttl,    soa.ttl.data(),    N * sizeof(uint8_t),  cudaMemcpyHostToDevice);
-    cudaMemcpy(d_checksum, soa.hdr_checksum.data(),
-               N * sizeof(uint16_t), cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_dst_ip, soa.dst_ip.data(), N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_ttl,    soa.ttl.data(),    N * sizeof(uint8_t),  cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_checksum, soa.hdr_checksum.data(),
+               N * sizeof(uint16_t), cudaMemcpyHostToDevice));
 
     // --- Copy routing table ---
     std::vector<RouteEntryDevice> rdev(rtable.size());
     for (size_t i = 0; i < rtable.size(); i++) {
         rdev[i] = { rtable[i].prefix, rtable[i].prefix_len, rtable[i].out_if };
     }
-    cudaMemcpy(d_rtable, rdev.data(),
+    CUDA_CHECK(cudaMemcpy(d_rtable, rdev.data(),
                rdev.size() * sizeof(RouteEntryDevice),
-               cudaMemcpyHostToDevice);
+               cudaMemcpyHostToDevice));
 
     // --- Kernel launch ---
     dim3 block(256);
     dim3 grid((N + block.x - 1) / block.x);
 
     cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
 
-    cudaEventRecord(start);
+    CUDA_CHECK(cudaEventRecord(start));
     forward_kernel<<<grid, block>>>(d_dst_ip, d_ttl, d_checksum,
                                     d_out_if, d_rtable,
                                     rdev.size(), N);
-    cudaEventRecord(stop);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaEventRecord(stop));
 
-    cudaEventSynchronize(stop);
+    CUDA_CHECK(cudaEventSynchronize(stop));
 
     float ms;
-    cudaEventElapsedTime(&ms, start, stop);
+    CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
     std::cout << "GPU kernel time: " << ms << " ms\n";
 
     // --- Copy back ---
-    cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(soa.out_if.data(), d_out_if, N * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(soa.out_if.data(), d_out_if, N * sizeof(int), cudaMemcpyDeviceToHost));
 
     // --- Cleanup ---
-    cudaFree(d_dst_ip);
-    cudaFree(d_ttl);
-    cudaFree(d_checksum);
-    cudaFree(d_out_if);
-    cudaFree(d_rtable);
+    CUDA_CHECK(cudaFree(d_dst_ip));
+    CUDA_CHECK(cudaFree(d_ttl));
+    CUDA_CHECK(cudaFree(d_checksum));
+    CUDA_CHECK(cudaFree(d_out_if));
+    CUDA_CHECK(cudaFree(d_rtable));
+    CUDA_CHECK(cudaEventDestroy(start));
+    CUDA_CHECK(cudaEventDestroy(stop));
 }

@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.25)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES "75;80;86")
+set(CMAKE_CUDA_ARCHITECTURES "61;75;80;86")
+
+# Usare GCC 11 per CUDA 11.8
+set(CMAKE_CUDA_HOST_COMPILER gcc-11)
 
 project(gpu_router_cpu_ref LANGUAGES CXX CUDA)
 
@@ -18,6 +21,11 @@ add_executable(gpu_router
     source/aos_to_soa.cpp
     source/gpu_runtime.cu
     source/gpu_forward.cu
+)
+
+# Permetti GCC 13 con CUDA 11 (a tuo rischio)
+target_compile_options(gpu_router PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:--allow-unsupported-compiler>
 )
 
 target_link_libraries(gpu_router PUBLIC OpenMP::OpenMP_CXX)

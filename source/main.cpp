@@ -6,7 +6,7 @@
 #include <omp.h>
 #include <cassert>
 
-#define N_Packets 100000
+#define N_Packets 10000000
 
 std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
@@ -34,14 +34,6 @@ int main()
         forward_packet_cpu(packetsSerial[i], rtable);
     }
     auto endSerial = std::chrono::high_resolution_clock::now();
-
-    // for(size_t i = 0; i < packets.size(); i++) {
-    //     std::cout << "Packet " << i
-    //         << " -> out_if=" << packets[i].out_if
-    //         << " TTL=" << int(packets[i].hdr.ttl)
-    //         << " checksum=0x" << std::hex << ntohs(packets[i].hdr.hdr_checksum)
-    //         << std::dec << "\n";
-    // }
     
     std::cout << std::endl;
 
@@ -70,6 +62,17 @@ int main()
 
 
     // Check operations
+    std::cout << "\nPrimi 5 risultati per debug:\n";
+    for(size_t i = 0; i < 5 && i < packets.size(); i++)
+    {
+        std::cout << "Packet " << i 
+                  << " - CPU out_if=" << packetsSerial[i].out_if
+                  << ", GPU out_if=" << soa.out_if[i]
+                  << ", dst_ip=0x" << std::hex << ntohl(packetsSerial[i].hdr.dst_ip) << std::dec
+                  << "\n";
+    }
+    std::cout << std::endl;
+
     for(size_t i = 0; i < packets.size(); i++)
     {
         // Check the serial and parallel packets was the same

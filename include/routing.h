@@ -13,7 +13,7 @@ struct RouteEntry {
 inline uint32_t prefix_mask(uint8_t prefix_len)
 {
     if (prefix_len == 0) return 0;
-    return htonl(~uint32_t(0) << (32 - prefix_len));
+    return ~uint32_t(0) << (32 - prefix_len);  // già in host order
 }
 
 // Longest Prefix Match (linear, simple but correct)
