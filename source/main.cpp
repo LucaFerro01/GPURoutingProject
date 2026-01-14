@@ -13,6 +13,7 @@ void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
 void forward_packets_cpu_parallel(std::vector<Packet>&, const std::vector<RouteEntry>&);
 PacketSoA aos_to_soa(const std::vector<Packet>& packets);
 void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
+void gpu_forward_bloom(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
 
 int main()
 {
@@ -50,16 +51,23 @@ int main()
     std::cout << "CPU Parallel forwarding time: " << msParallel << " ms" << std::endl;
     // --- End Parallel Part
 
-    // --- GPU part (for now only SOA part)
+    // --- GPU part (LPM standard) ---
     auto startGPU = std::chrono::high_resolution_clock::now();
     PacketSoA soa = aos_to_soa(packets);
     gpu_forward(soa, rtable);
     auto endGPU = std::chrono::high_resolution_clock::now();
     double msGPU = std::chrono::duration<double, std::milli>(endGPU - startGPU).count();
-    std::cout << "GPU forwarding total time (incl. mem transfer): " << msGPU << " ms" << std::endl;
+    std::cout << "GPU LPM forwarding total time: " << msGPU << " ms" << std::endl;
     // --- End GPU part
 
-
+    // --- GPU Bloom filter part ---
+    auto startGPUBloom = std::chrono::high_resolution_clock::now();
+    PacketSoA soaBloom = aos_to_soa(packets);
+    gpu_forward_bloom(soaBloom, rtable);
+    auto endGPUBloom = std::chrono::high_resolution_clock::now();
+    double msGPUBloom = std::chrono::duration<double, std::milli>(endGPUBloom - startGPUBloom).count();
+    std::cout << "GPU Bloom forwarding total time: " << msGPUBloom << " ms" << std::endl;
+    // --- End GPU Bloom part
 
     // Check operations
     std::cout << "\nPrimi 5 risultati per debug:\n";
@@ -67,7 +75,8 @@ int main()
     {
         std::cout << "Packet " << i 
                   << " - CPU out_if=" << packetsSerial[i].out_if
-                  << ", GPU out_if=" << soa.out_if[i]
+                  << ", GPU LPM out_if=" << soa.out_if[i]
+                  << ", GPU Bloom out_if=" << soaBloom.out_if[i]
                   << ", dst_ip=0x" << std::hex << ntohl(packetsSerial[i].hdr.dst_ip) << std::dec
                   << "\n";
     }
@@ -77,11 +86,15 @@ int main()
     {
         // Check the serial and parallel packets was the same
         assert(packetsSerial[i].out_if == packetsParallel[i].out_if);
-        // Check GPU result matches CPU serial result
+        // Check GPU LPM result matches CPU serial result
         assert(soa.out_if[i] == packetsSerial[i].out_if);
+        // Check GPU Bloom result matches CPU serial result
+        assert(soaBloom.out_if[i] == packetsSerial[i].out_if);
         assert(soa.ttl[i] == packetsSerial[i].hdr.ttl);
         assert(soa.dst_ip[i] == ntohl(packetsSerial[i].hdr.dst_ip));
     }
+
+    std::cout << "\n✅ All tests passed!\n";
 
     return 0;
 }

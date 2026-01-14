@@ -13,6 +13,17 @@ struct PacketSoA {
     // Output
     std::vector<int> out_if;
 
+    // Puntatori per pinned memory (opzionale)
+    uint32_t* pinned_dst_ip = nullptr;
+    uint8_t*  pinned_ttl = nullptr;
+    uint16_t* pinned_checksum = nullptr;
+    int*      pinned_out_if = nullptr;
+    
+    void allocatePinned();
+    void freePinned();
+    void copyToPinned();
+    void copyFromPinned();
+
     PacketSoA(size_t n)
         : N(n),
           dst_ip(n),

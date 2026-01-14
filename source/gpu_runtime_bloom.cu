@@ -1,6 +1,7 @@
 #include "packet_soa.h"
 #include "routing_device.h"
 #include "routing.h"
+#include "bloom_filter.h"
 #include <cuda_runtime.h>
 #include <vector>
 #include <iostream>
@@ -16,31 +17,47 @@
         } \
     } while (0)
 
-__global__ void forward_kernel(
+__global__ void forward_kernel_bloom(
     const uint32_t* dst_ip,
     uint8_t* ttl,
     uint16_t* checksum,
     int* out_if,
+    const uint32_t* bloom,
     const RouteEntryDevice* rtable,
     int rtable_size,
     int N
 );
 
-void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
+void gpu_forward_bloom(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
 {
     int N = soa.N;
+
+    // --- Build Bloom filter on CPU ---
+    uint32_t* h_bloom = new uint32_t[BLOOM_WORDS];
+    
+    std::vector<uint32_t> prefixes(rtable.size());
+    std::vector<uint8_t> prefix_len(rtable.size());
+    
+    for (size_t i = 0; i < rtable.size(); i++) {
+        prefixes[i] = rtable[i].prefix;
+        prefix_len[i] = rtable[i].prefix_len;
+    }
+    
+    build_bloom_filter(h_bloom, prefixes.data(), prefix_len.data(), rtable.size());
 
     // --- Allocate device memory ---
     uint32_t* d_dst_ip;
     uint8_t*  d_ttl;
     uint16_t* d_checksum;
     int*      d_out_if;
+    uint32_t* d_bloom;
     RouteEntryDevice* d_rtable;
 
     CUDA_CHECK(cudaMalloc(&d_dst_ip, N * sizeof(uint32_t)));
     CUDA_CHECK(cudaMalloc(&d_ttl, N * sizeof(uint8_t)));
     CUDA_CHECK(cudaMalloc(&d_checksum, N * sizeof(uint16_t)));
     CUDA_CHECK(cudaMalloc(&d_out_if, N * sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&d_bloom, BLOOM_WORDS * sizeof(uint32_t)));
     CUDA_CHECK(cudaMalloc(&d_rtable, rtable.size() * sizeof(RouteEntryDevice)));
 
     // --- Copy routing table ---
@@ -49,10 +66,11 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
         rdev[i] = { rtable[i].prefix, rtable[i].prefix_len, rtable[i].out_if };
     }
 
-    // --- Direct copy from std::vector to GPU ---
+    // --- Copy data to GPU ---
     CUDA_CHECK(cudaMemcpy(d_dst_ip, soa.dst_ip.data(), N * sizeof(uint32_t), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_ttl, soa.ttl.data(), N * sizeof(uint8_t), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_checksum, soa.hdr_checksum.data(), N * sizeof(uint16_t), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_bloom, h_bloom, BLOOM_WORDS * sizeof(uint32_t), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_rtable, rdev.data(), rdev.size() * sizeof(RouteEntryDevice), cudaMemcpyHostToDevice));
 
     // --- Kernel launch ---
@@ -64,14 +82,15 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaEventCreate(&stop));
 
     CUDA_CHECK(cudaEventRecord(start));
-    forward_kernel<<<grid, block>>>(d_dst_ip, d_ttl, d_checksum, d_out_if, d_rtable, rdev.size(), N);
+    forward_kernel_bloom<<<grid, block>>>(d_dst_ip, d_ttl, d_checksum, d_out_if, 
+                                          d_bloom, d_rtable, rdev.size(), N);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
 
     float ms;
     CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
-    std::cout << "GPU kernel time: " << ms << " ms\n";
+    std::cout << "GPU Bloom kernel time: " << ms << " ms\n";
 
     // --- Copy back ---
     CUDA_CHECK(cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost));
@@ -82,8 +101,11 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaFree(d_ttl));
     CUDA_CHECK(cudaFree(d_checksum));
     CUDA_CHECK(cudaFree(d_out_if));
+    CUDA_CHECK(cudaFree(d_bloom));
     CUDA_CHECK(cudaFree(d_rtable));
     
     CUDA_CHECK(cudaEventDestroy(start));
     CUDA_CHECK(cudaEventDestroy(stop));
+
+    delete[] h_bloom;
 }

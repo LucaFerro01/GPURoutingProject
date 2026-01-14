@@ -19,8 +19,11 @@ add_executable(gpu_router
     source/packet_generator.cpp
     source/forward_cpu.cpp
     source/aos_to_soa.cpp
+    source/bloom_filter.cpp
     source/gpu_runtime.cu
     source/gpu_forward.cu
+    source/gpu_runtime_bloom.cu
+    source/gpu_forward_bloom.cu
 )
 
 # Permetti GCC 13 con CUDA 11 (a tuo rischio)
