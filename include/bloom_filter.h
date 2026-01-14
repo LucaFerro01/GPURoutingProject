@@ -6,6 +6,7 @@
 
 #define BLOOM_BITS (1 << 20)  // 1M bits
 #define BLOOM_WORDS (BLOOM_BITS / 32)
+#define NUM_HASH 3  // Aumenta da 2 a 3 hash functions
 
 // Hash functions (CPU e GPU compatibili)
 inline uint32_t hash1(uint32_t x) {
@@ -21,7 +22,13 @@ inline uint32_t hash2(uint32_t x) {
     return x;
 }
 
-// CPU functions
+inline uint32_t hash3(uint32_t x) {
+    x ^= x >> 13;
+    x *= 0x9e3779b1;
+    x ^= x >> 17;
+    return x;
+}
+
 void bloom_insert(uint32_t* bloom, uint32_t network);
 
 void build_bloom_filter(

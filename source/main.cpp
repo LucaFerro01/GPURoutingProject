@@ -94,7 +94,7 @@ int main()
         assert(soa.dst_ip[i] == ntohl(packetsSerial[i].hdr.dst_ip));
     }
 
-    std::cout << "\n✅ All tests passed!\n";
+    std::cout << "\n All tests passed!\n";
 
     return 0;
 }
