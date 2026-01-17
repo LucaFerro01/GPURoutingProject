@@ -55,9 +55,24 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaMemcpy(d_checksum, soa.hdr_checksum.data(), N * sizeof(uint16_t), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_rtable, rdev.data(), rdev.size() * sizeof(RouteEntryDevice), cudaMemcpyHostToDevice));
 
+
+    // --- Calculate block and grid dimension ---
+    int minGridSize;
+    int optimalBlockSize;
+
+    CUDA_CHECK(cudaOccupancyMaxPotentialBlockSize(
+        &minGridSize,
+        &optimalBlockSize,
+        forward_kernel,
+        0, 0
+    ))
     // --- Kernel launch ---
-    dim3 block(256);
+    int blockSize = optimalBlockSize > 0 ? optimalBlockSize : 256;
+    dim3 block(blockSize);
     dim3 grid((N + block.x - 1) / block.x);
+
+    std::cout << "Block size: " << blockSize 
+        << ", Grid size: " << grid.x << std::endl;
 
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
