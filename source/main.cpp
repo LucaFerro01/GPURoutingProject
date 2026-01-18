@@ -5,6 +5,7 @@
 #include <chrono>
 #include <omp.h>
 #include <cassert>
+#include <random>
 
 #define N_Packets 10000000
 
@@ -15,14 +16,63 @@ PacketSoA aos_to_soa(const std::vector<Packet>& packets);
 void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
 void gpu_forward_bloom(PacketSoA& soa, const std::vector<RouteEntry>& rtable);
 
+// Generate a realistic routing table with various prefix lengths
+std::vector<RouteEntry> generate_routing_table(size_t num_entries) {
+    std::vector<RouteEntry> rtable;
+    std::mt19937 rng(42); // Fixed seed for reproducibility
+    std::uniform_int_distribution<uint32_t> dist_ip(0, 0xFFFFFFFF);
+    
+    // Add some common prefixes with different lengths
+    // Typical distribution: many /24, some /16, few /8
+    size_t num_8 = num_entries / 20;   // 5% /8
+    size_t num_16 = num_entries / 5;   // 20% /16
+    size_t num_24 = num_entries - num_8 - num_16; // 75% /24
+    
+    int out_if = 1;
+    
+    // Generate /8 prefixes
+    for (size_t i = 0; i < num_8; i++) {
+        uint32_t prefix = (dist_ip(rng) & 0xFF000000);
+        rtable.push_back({prefix, 8, out_if++});
+    }
+    
+    // Generate /16 prefixes
+    for (size_t i = 0; i < num_16; i++) {
+        uint32_t prefix = (dist_ip(rng) & 0xFFFF0000);
+        rtable.push_back({prefix, 16, out_if++});
+    }
+    
+    // Generate /24 prefixes
+    for (size_t i = 0; i < num_24; i++) {
+        uint32_t prefix = (dist_ip(rng) & 0xFFFFFF00);
+        rtable.push_back({prefix, 24, out_if++});
+    }
+    
+    // Add default route
+    rtable.push_back({0, 0, 9999});
+    
+    return rtable;
+}
+
 int main()
 {
-    // Example routing table
-    std::vector<RouteEntry> rtable = {
-        { ntohl(inet_addr("10.0.0.0")),   8,  1 },
-        { ntohl(inet_addr("192.168.0.0")),8, 2 },
-        { 0, 0, 3 } // default route
-    };
+    // Generate routing table - change this number to test different sizes
+    // Try: 3, 100, 1000, 5000, 10000
+    const size_t NUM_ROUTES = 5000;
+    
+    std::vector<RouteEntry> rtable;
+    if (NUM_ROUTES <= 3) {
+        // Small test table
+        rtable = {
+            { ntohl(inet_addr("10.0.0.0")),   8,  1 },
+            { ntohl(inet_addr("192.168.0.0")),8, 2 },
+            { 0, 0, 3 } // default route
+        };
+    } else {
+        rtable = generate_routing_table(NUM_ROUTES);
+    }
+    
+    std::cout << "Routing table size: " << rtable.size() << " entries\n" << std::endl;
 
     auto packets = generate_packets(N_Packets);
 

@@ -54,6 +54,8 @@ __global__ void forward_kernel_bloom(
     const uint32_t* bloom,
     const RouteEntryDevice* rtable,
     int rtable_size,
+    const uint8_t* unique_prefix_lens,
+    int num_unique_lens,
     int N
 )
 {
@@ -75,8 +77,9 @@ __global__ void forward_kernel_bloom(
     int best = -1;
     int best_len = -1;
 
-    // Iterate from longest to shortest prefix
-    for (int plen = 32; plen >= 0; --plen) {
+    // Iterate only through existing prefix lengths (from longest to shortest)
+    for (int idx = 0; idx < num_unique_lens; ++idx) {
+        int plen = unique_prefix_lens[idx];
         uint32_t mask = plen == 0 ? 0 : 0xFFFFFFFF << (32 - plen);
         uint32_t net = dip & mask;
 

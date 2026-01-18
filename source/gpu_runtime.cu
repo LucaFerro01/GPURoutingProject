@@ -49,30 +49,37 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
         rdev[i] = { rtable[i].prefix, rtable[i].prefix_len, rtable[i].out_if };
     }
 
-    // --- Direct copy from std::vector to GPU ---
-    CUDA_CHECK(cudaMemcpy(d_dst_ip, soa.dst_ip.data(), N * sizeof(uint32_t), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_ttl, soa.ttl.data(), N * sizeof(uint8_t), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_checksum, soa.hdr_checksum.data(), N * sizeof(uint16_t), cudaMemcpyHostToDevice));
+    // --- Create CUDA streams for async operations ---
+    cudaStream_t stream1, stream2;
+    CUDA_CHECK(cudaStreamCreate(&stream1));
+    CUDA_CHECK(cudaStreamCreate(&stream2));
+
+    // --- Async copy from pinned memory to GPU (faster!) ---
+    if (soa.pinned_dst_ip) {
+        CUDA_CHECK(cudaMemcpyAsync(d_dst_ip, soa.pinned_dst_ip, N * sizeof(uint32_t), 
+                                    cudaMemcpyHostToDevice, stream1));
+        CUDA_CHECK(cudaMemcpyAsync(d_ttl, soa.pinned_ttl, N * sizeof(uint8_t), 
+                                    cudaMemcpyHostToDevice, stream1));
+        CUDA_CHECK(cudaMemcpyAsync(d_checksum, soa.pinned_checksum, N * sizeof(uint16_t), 
+                                    cudaMemcpyHostToDevice, stream2));
+    } else {
+        // Fallback to synchronous copy if no pinned memory
+        CUDA_CHECK(cudaMemcpy(d_dst_ip, soa.dst_ip.data(), N * sizeof(uint32_t), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(d_ttl, soa.ttl.data(), N * sizeof(uint8_t), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(d_checksum, soa.hdr_checksum.data(), N * sizeof(uint16_t), cudaMemcpyHostToDevice));
+    }
+    
     CUDA_CHECK(cudaMemcpy(d_rtable, rdev.data(), rdev.size() * sizeof(RouteEntryDevice), cudaMemcpyHostToDevice));
 
-
-    // --- Calculate block and grid dimension ---
-    int minGridSize;
-    int optimalBlockSize;
-
-    CUDA_CHECK(cudaOccupancyMaxPotentialBlockSize(
-        &minGridSize,
-        &optimalBlockSize,
-        forward_kernel,
-        0, 0
-    ))
     // --- Kernel launch ---
-    int blockSize = optimalBlockSize > 0 ? optimalBlockSize : 256;
-    dim3 block(blockSize);
+    dim3 block(256);
     dim3 grid((N + block.x - 1) / block.x);
-
-    std::cout << "Block size: " << blockSize 
-        << ", Grid size: " << grid.x << std::endl;
+    
+    // Wait for async transfers to complete before kernel
+    if (soa.pinned_dst_ip) {
+        CUDA_CHECK(cudaStreamSynchronize(stream1));
+        CUDA_CHECK(cudaStreamSynchronize(stream2));
+    }
 
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
@@ -88,9 +95,22 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
     std::cout << "GPU kernel time: " << ms << " ms\n";
 
-    // --- Copy back ---
-    CUDA_CHECK(cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(soa.out_if.data(), d_out_if, N * sizeof(int), cudaMemcpyDeviceToHost));
+    // --- Async copy back using pinned memory ---
+    if (soa.pinned_out_if) {
+        CUDA_CHECK(cudaMemcpyAsync(soa.pinned_ttl, d_ttl, N * sizeof(uint8_t), 
+                                    cudaMemcpyDeviceToHost, stream1));
+        CUDA_CHECK(cudaMemcpyAsync(soa.pinned_out_if, d_out_if, N * sizeof(int), 
+                                    cudaMemcpyDeviceToHost, stream2));
+        CUDA_CHECK(cudaStreamSynchronize(stream1));
+        CUDA_CHECK(cudaStreamSynchronize(stream2));
+        
+        // Copy from pinned to regular memory
+        soa.copyFromPinned();
+    } else {
+        // Fallback to synchronous copy
+        CUDA_CHECK(cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(soa.out_if.data(), d_out_if, N * sizeof(int), cudaMemcpyDeviceToHost));
+    }
 
     // --- Cleanup ---
     CUDA_CHECK(cudaFree(d_dst_ip));
@@ -99,6 +119,8 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaFree(d_out_if));
     CUDA_CHECK(cudaFree(d_rtable));
     
+    CUDA_CHECK(cudaStreamDestroy(stream1));
+    CUDA_CHECK(cudaStreamDestroy(stream2));
     CUDA_CHECK(cudaEventDestroy(start));
     CUDA_CHECK(cudaEventDestroy(stop));
 }

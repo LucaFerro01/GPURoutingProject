@@ -30,4 +30,8 @@ struct PacketSoA {
           ttl(n),
           hdr_checksum(n),
           out_if(n, -1) {}
+    
+    ~PacketSoA() {
+        freePinned();
+    }
 };
