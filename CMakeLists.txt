@@ -20,6 +20,7 @@ add_executable(gpu_router
     source/forward_cpu.cpp
     source/aos_to_soa.cpp
     source/bloom_filter.cpp
+    source/gpu_verbose.cpp
     source/gpu_runtime.cu
     source/gpu_forward.cu
     source/gpu_runtime_bloom.cu

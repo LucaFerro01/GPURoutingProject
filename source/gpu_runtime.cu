@@ -1,6 +1,7 @@
 #include "packet_soa.h"
 #include "routing_device.h"
 #include "routing.h"
+#include "gpu_verbose.h"
 #include <cuda_runtime.h>
 #include <vector>
 #include <iostream>
@@ -54,6 +55,12 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaStreamCreate(&stream1));
     CUDA_CHECK(cudaStreamCreate(&stream2));
 
+    // --- Timing for H2D transfer ---
+    cudaEvent_t h2d_start, h2d_stop;
+    CUDA_CHECK(cudaEventCreate(&h2d_start));
+    CUDA_CHECK(cudaEventCreate(&h2d_stop));
+    CUDA_CHECK(cudaEventRecord(h2d_start));
+
     // --- Async copy from pinned memory to GPU (faster!) ---
     if (soa.pinned_dst_ip) {
         CUDA_CHECK(cudaMemcpyAsync(d_dst_ip, soa.pinned_dst_ip, N * sizeof(uint32_t), 
@@ -71,15 +78,20 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     
     CUDA_CHECK(cudaMemcpy(d_rtable, rdev.data(), rdev.size() * sizeof(RouteEntryDevice), cudaMemcpyHostToDevice));
 
-    // --- Kernel launch ---
-    dim3 block(256);
-    dim3 grid((N + block.x - 1) / block.x);
-    
     // Wait for async transfers to complete before kernel
     if (soa.pinned_dst_ip) {
         CUDA_CHECK(cudaStreamSynchronize(stream1));
         CUDA_CHECK(cudaStreamSynchronize(stream2));
     }
+    
+    CUDA_CHECK(cudaEventRecord(h2d_stop));
+    CUDA_CHECK(cudaEventSynchronize(h2d_stop));
+    float h2d_ms;
+    CUDA_CHECK(cudaEventElapsedTime(&h2d_ms, h2d_start, h2d_stop));
+
+    // --- Kernel launch ---
+    dim3 block(256);
+    dim3 grid((N + block.x - 1) / block.x);
 
     cudaEvent_t start, stop;
     CUDA_CHECK(cudaEventCreate(&start));
@@ -91,9 +103,14 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
 
-    float ms;
-    CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
-    std::cout << "GPU kernel time: " << ms << " ms\n";
+    float kernel_ms;
+    CUDA_CHECK(cudaEventElapsedTime(&kernel_ms, start, stop));
+
+    // --- Timing for D2H transfer ---
+    cudaEvent_t d2h_start, d2h_stop;
+    CUDA_CHECK(cudaEventCreate(&d2h_start));
+    CUDA_CHECK(cudaEventCreate(&d2h_stop));
+    CUDA_CHECK(cudaEventRecord(d2h_start));
 
     // --- Async copy back using pinned memory ---
     if (soa.pinned_out_if) {
@@ -111,6 +128,25 @@ void gpu_forward(PacketSoA& soa, const std::vector<RouteEntry>& rtable)
         CUDA_CHECK(cudaMemcpy(soa.ttl.data(), d_ttl, N * sizeof(uint8_t), cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(soa.out_if.data(), d_out_if, N * sizeof(int), cudaMemcpyDeviceToHost));
     }
+    
+    CUDA_CHECK(cudaEventRecord(d2h_stop));
+    CUDA_CHECK(cudaEventSynchronize(d2h_stop));
+    float d2h_ms;
+    CUDA_CHECK(cudaEventElapsedTime(&d2h_ms, d2h_start, d2h_stop));
+
+    // Print detailed timing
+    if (g_verbose_gpu_timing) {
+        std::cout << "GPU LPM Timing (pinned=" << (soa.pinned_dst_ip ? "YES" : "NO") << "):" << std::endl;
+        std::cout << "  H2D transfer: " << h2d_ms << " ms" << std::endl;
+        std::cout << "  Kernel exec:  " << kernel_ms << " ms" << std::endl;
+        std::cout << "  D2H transfer: " << d2h_ms << " ms" << std::endl;
+        std::cout << "  Total GPU:    " << (h2d_ms + kernel_ms + d2h_ms) << " ms\n" << std::endl;
+    }
+
+    CUDA_CHECK(cudaEventDestroy(h2d_start));
+    CUDA_CHECK(cudaEventDestroy(h2d_stop));
+    CUDA_CHECK(cudaEventDestroy(d2h_start));
+    CUDA_CHECK(cudaEventDestroy(d2h_stop));
 
     // --- Cleanup ---
     CUDA_CHECK(cudaFree(d_dst_ip));
