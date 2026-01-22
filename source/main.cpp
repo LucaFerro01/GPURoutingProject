@@ -1,13 +1,14 @@
 #include "ip_types.h"
 #include "routing.h"
 #include "packet_soa.h"
+#include "print_helpers.h"
 #include <iostream>
 #include <chrono>
 #include <omp.h>
 #include <cassert>
 #include <random>
 
-#define N_Packets 10000000
+#define N_Packets 1000000
 
 std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
@@ -61,7 +62,8 @@ int main()
     // Generate routing table - change this number to test different sizes
     // Try: 3, 100, 1000, 5000, 10000
     const size_t NUM_ROUTES = 100;
-    const int NUM_BATCHES = 10;  // Number of batches to process
+    // Number of batches to process
+    const int NUM_BATCHES = 10;  
     
     std::vector<RouteEntry> rtable;
     if (NUM_ROUTES <= 3) {
@@ -75,8 +77,7 @@ int main()
         rtable = generate_routing_table(NUM_ROUTES);
     }
     
-    std::cout << "Routing table size: " << rtable.size() << " entries" << std::endl;
-    std::cout << "Number of batches: " << NUM_BATCHES << "\n" << std::endl;
+    print_routing_info(rtable.size(), NUM_BATCHES);
 
     auto packets = generate_packets(N_Packets);
 
@@ -90,10 +91,7 @@ int main()
     }
     auto endSerial = std::chrono::high_resolution_clock::now();
     
-    std::cout << std::endl;
-
     double msSerial = std::chrono::duration<double, std::milli>(endSerial - startSerial).count();
-    std::cout << "CPU forwarding time: " << msSerial << " ms" << std::endl;
     // --- End Serial Part
 
     // --- Parallel Part
@@ -102,10 +100,10 @@ int main()
     auto endParallel = std::chrono::high_resolution_clock::now();
 
     double msParallel = std::chrono::duration<double, std::milli>(endParallel - startParallel).count();
-    std::cout << "CPU Parallel forwarding time: " << msParallel << " ms" << std::endl;
+    print_cpu_results(msSerial, msParallel);
     // --- End Parallel Part
 
-    std::cout << "\n=== GPU Tests WITH Pinned Memory ===" << std::endl;
+    print_gpu_header("GPU Tests WITH Pinned Memory");
 
     // --- GPU part (LPM standard) with pinned memory ---
     auto startGPU = std::chrono::high_resolution_clock::now();
@@ -121,9 +119,7 @@ int main()
     
     auto endGPU = std::chrono::high_resolution_clock::now();
     double msGPU = std::chrono::duration<double, std::milli>(endGPU - startGPU).count();
-    std::cout << "  AoS->SoA + pinned alloc: " << msAoS << " ms" << std::endl;
-    std::cout << "  GPU forward function:    " << msForward << " ms" << std::endl;
-    std::cout << "GPU LPM forwarding total time: " << msGPU << " ms" << std::endl;
+    print_gpu_lpm_results(msAoS, msForward, msGPU);
     // --- End GPU part
 
     // --- GPU Bloom filter part with pinned memory ---
@@ -140,12 +136,10 @@ int main()
     
     auto endGPUBloom = std::chrono::high_resolution_clock::now();
     double msGPUBloom = std::chrono::duration<double, std::milli>(endGPUBloom - startGPUBloom).count();
-    std::cout << "  AoS->SoA + pinned alloc: " << msAoSBloom << " ms" << std::endl;
-    std::cout << "  GPU forward function:    " << msForwardBloom << " ms" << std::endl;
-    std::cout << "GPU Bloom forwarding total time: " << msGPUBloom << " ms" << std::endl;
+    print_gpu_bloom_results(msAoSBloom, msForwardBloom, msGPUBloom);
     // --- End GPU Bloom part
 
-    std::cout << "\n=== GPU Tests WITHOUT Pinned Memory ===" << std::endl;
+    print_gpu_header("GPU Tests WITHOUT Pinned Memory");
 
     // --- GPU LPM without pinned memory ---
     auto startGPUNoPinned = std::chrono::high_resolution_clock::now();
@@ -161,9 +155,7 @@ int main()
     
     auto endGPUNoPinned = std::chrono::high_resolution_clock::now();
     double msGPUNoPinned = std::chrono::duration<double, std::milli>(endGPUNoPinned - startGPUNoPinned).count();
-    std::cout << "  AoS->SoA (no pinned):    " << msAoSNoPinned << " ms" << std::endl;
-    std::cout << "  GPU forward function:    " << msForwardNoPinned << " ms" << std::endl;
-    std::cout << "GPU LPM forwarding total time: " << msGPUNoPinned << " ms" << std::endl;
+    print_gpu_lpm_no_pinned(msAoSNoPinned, msForwardNoPinned, msGPUNoPinned);
 
     // --- GPU Bloom without pinned memory ---
     auto startGPUBloomNoPinned = std::chrono::high_resolution_clock::now();
@@ -173,26 +165,12 @@ int main()
     double msGPUBloomNoPinned = std::chrono::duration<double, std::milli>(endGPUBloomNoPinned - startGPUBloomNoPinned).count();
     std::cout << "GPU Bloom forwarding total time: " << msGPUBloomNoPinned << " ms" << std::endl;
 
-    std::cout << "\n=== Performance Comparison ===" << std::endl;
-    std::cout << "GPU LPM speedup with pinned memory: " 
-              << ((msGPUNoPinned - msGPU) / msGPUNoPinned * 100.0) << "%" << std::endl;
-    std::cout << "GPU Bloom speedup with pinned memory: " 
-              << ((msGPUBloomNoPinned - msGPUBloom) / msGPUBloomNoPinned * 100.0) << "%" << std::endl;
+    print_performance_comparison(msGPU, msGPUNoPinned, msGPUBloom, msGPUBloomNoPinned);
 
     // Check operations
-    std::cout << "\nPrimi 5 risultati per debug:\n";
-    for(size_t i = 0; i < 5 && i < packets.size(); i++)
-    {
-        std::cout << "Packet " << i 
-                  << " - CPU out_if=" << packetsSerial[i].out_if
-                  << ", GPU LPM out_if=" << soa.out_if[i]
-                  << ", GPU Bloom out_if=" << soaBloom.out_if[i]
-                  << ", dst_ip=0x" << std::hex << ntohl(packetsSerial[i].hdr.dst_ip) << std::dec
-                  << "\n";
-    }
-    std::cout << std::endl;
+    print_debug_samples(packetsSerial, soa, soaBloom);
 
-    std::cout << "Verifying correctness..." << std::endl;
+    print_verification_header();
     for(size_t i = 0; i < packets.size(); i++)
     {
         // Check the serial and parallel packets was the same
@@ -207,20 +185,18 @@ int main()
         assert(soa.dst_ip[i] == ntohl(packetsSerial[i].hdr.dst_ip));
     }
 
-    std::cout << "\n All tests passed!\n";
+    print_verification_success();
 
     // ==========================================================================
     // MULTI-BATCH TEST: Simulating continuous processing
     // ==========================================================================
-    std::cout << "\n\n========================================" << std::endl;
-    std::cout << "=== MULTI-BATCH TEST (streaming simulation) ===" << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    print_multibatch_header();
 
     // Disable verbose GPU timing for cleaner output during batch processing
     set_gpu_verbose(false);
 
     // Test 1: WITH pinned memory (allocate ONCE, reuse multiple times)
-    std::cout << "--- WITH Pinned Memory (reused " << NUM_BATCHES << " times) ---" << std::endl;
+    print_multibatch_pinned_header(NUM_BATCHES);
     
     auto startMultiPinned = std::chrono::high_resolution_clock::now();
     
@@ -241,13 +217,10 @@ int main()
     double totalMultiPinned = std::chrono::duration<double, std::milli>(endMultiPinned - startMultiPinned).count();
     double processingOnlyPinned = std::chrono::duration<double, std::milli>(endMultiPinned - afterAllocPinned).count();
     
-    std::cout << "  Initial allocation: " << allocPinnedTime << " ms" << std::endl;
-    std::cout << "  Processing " << NUM_BATCHES << " batches: " << processingOnlyPinned << " ms" << std::endl;
-    std::cout << "  Average per batch: " << (processingOnlyPinned / NUM_BATCHES) << " ms" << std::endl;
-    std::cout << "  Total time: " << totalMultiPinned << " ms\n" << std::endl;
+    print_multibatch_pinned_results(allocPinnedTime, processingOnlyPinned, totalMultiPinned, NUM_BATCHES);
 
     // Test 2: WITHOUT pinned memory (allocate every time)
-    std::cout << "--- WITHOUT Pinned Memory (allocate " << NUM_BATCHES << " times) ---" << std::endl;
+    print_multibatch_no_pinned_header(NUM_BATCHES);
     
     auto startMultiNoPinned = std::chrono::high_resolution_clock::now();
     
@@ -260,21 +233,10 @@ int main()
     auto endMultiNoPinned = std::chrono::high_resolution_clock::now();
     double totalMultiNoPinned = std::chrono::duration<double, std::milli>(endMultiNoPinned - startMultiNoPinned).count();
     
-    std::cout << "  Total time: " << totalMultiNoPinned << " ms" << std::endl;
-    std::cout << "  Average per batch: " << (totalMultiNoPinned / NUM_BATCHES) << " ms\n" << std::endl;
+    print_multibatch_no_pinned_results(totalMultiNoPinned, NUM_BATCHES);
 
     // Results
-    std::cout << "=== MULTI-BATCH RESULTS ===" << std::endl;
-    double speedup = ((totalMultiNoPinned - totalMultiPinned) / totalMultiNoPinned) * 100.0;
-    std::cout << "Pinned memory speedup: " << speedup << "%" << std::endl;
-    std::cout << "Time saved: " << (totalMultiNoPinned - totalMultiPinned) << " ms" << std::endl;
-    
-    if (speedup > 0) {
-        std::cout << "✅ Pinned memory IS beneficial for multi-batch processing!" << std::endl;
-    } else {
-        std::cout << "⚠️  Pinned memory overhead still too high even for " << NUM_BATCHES << " batches" << std::endl;
-    }
-    std::cout << "\n========================================\n" << std::endl;
+    print_multibatch_summary(totalMultiPinned, totalMultiNoPinned);
 
     return 0;
 }

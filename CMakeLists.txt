@@ -16,6 +16,7 @@ include_directories(include)
 
 add_executable(gpu_router
     source/main.cpp
+    source/print_helpers.cpp
     source/packet_generator.cpp
     source/forward_cpu.cpp
     source/aos_to_soa.cpp

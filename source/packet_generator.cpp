@@ -8,6 +8,7 @@ std::vector<Packet> generate_packets(size_t N)
     std::mt19937 rng(12345);
     std::uniform_int_distribution<uint32_t> ipdist(0, 0xFFFFFFFF);
 
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < N; i++) {
         Packet& p = packets[i];
         IPv4Header& h = p.hdr;
