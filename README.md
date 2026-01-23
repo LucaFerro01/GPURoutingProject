@@ -23,11 +23,10 @@ High-level flow in `main.cpp`:
 6. Compare outputs for correctness and report performance.
 7. Run a multi-batch test that reuses pinned memory across multiple GPU launches.
 
-Key parameters (edit in `source/main.cpp`):
+Key parameters:
 
-- `N_Packets`: total packets to process.
-- `NUM_ROUTES`: number of routing entries.
-- `NUM_BATCHES`: number of batches in the streaming simulation.
+- `num_packets` and `num_routes` can be passed from the command line: `./build/gpu_router [num_packets] [num_routes]`.
+- `NUM_BATCHES` is still defined in `source/main.cpp` and controls the multi-batch simulation.
 
 ### Print helpers
 In the project are available a `source/print_helpers.cpp` file that contain all the print function that help to visualize and describe the results of the computation.
@@ -69,6 +68,23 @@ From the project root:
 
 3. Run:
    - `./build/gpu_router`
+
+## Profiling on HPC@Polito (SBATCH)
+To run the project on HPC@Polito using SLURM, use the provided `gpu_profile.sh` script. It wraps the executable with Nsight Systems (default) or Nsight Compute and submits the job with `sbatch`.
+
+1. Edit the parameters in `gpu_profile.sh` (recommended before submitting):
+   - `NUM_PACKETS`: number of packets to process.
+   - `NUM_ROUTES`: number of routes.
+   - `PROFILE_TOOL`: `nsys` (default) or `ncu`.
+
+2. Submit the job:
+   - `sbatch gpu_profile.sh`
+
+3. Outputs:
+   - The SLURM log is written to `routing_profile.log`.
+   - Profiling outputs are saved in the project root with prefix `gpu_routing_nsys` or `gpu_routing_ncu`.
+
+The script expects the executable at `./gpu_router` (project root). If you build into `build/`, copy or link the binary to the root, or adjust `EXECUTABLE` in the script.
 
 ## Notes
 - If your GPU is not in the listed architectures, update `CMAKE_CUDA_ARCHITECTURES` in `CMakeLists.txt`.
