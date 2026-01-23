@@ -8,7 +8,8 @@
 #include <cassert>
 #include <random>
 
-#define N_Packets 1000000
+constexpr size_t DEFAULT_N_PACKETS = 1000000;
+constexpr size_t DEFAULT_NUM_ROUTES = 100;
 
 std::vector<Packet> generate_packets(size_t N);
 void forward_packet_cpu(Packet& p, const std::vector<RouteEntry>& rtable);
@@ -57,11 +58,17 @@ std::vector<RouteEntry> generate_routing_table(size_t num_entries) {
     return rtable;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    // Generate routing table - change this number to test different sizes
-    // Try: 3, 100, 1000, 5000, 10000
-    const size_t NUM_ROUTES = 100;
+    // Command line usage: ./gpu_router [num_packets] [num_routes]
+    size_t numPackets = DEFAULT_N_PACKETS;
+    size_t NUM_ROUTES = DEFAULT_NUM_ROUTES;
+    if (argc >= 2) {
+        numPackets = static_cast<size_t>(std::stoull(argv[1]));
+    }
+    if (argc >= 3) {
+        NUM_ROUTES = static_cast<size_t>(std::stoull(argv[2]));
+    }
     // Number of batches to process
     const int NUM_BATCHES = 10;  
     
@@ -79,7 +86,7 @@ int main()
     
     print_routing_info(rtable.size(), NUM_BATCHES);
 
-    auto packets = generate_packets(N_Packets);
+    auto packets = generate_packets(numPackets);
 
     std::vector<Packet> packetsSerial = packets;
     std::vector<Packet> packetsParallel = packets;
