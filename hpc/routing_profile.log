@@ -1,0 +1,411 @@
+=== Starting profiling ===
+Packets: 10000000, Routes: 100
+
+Routing table size: 101 entries
+Number of batches: 10
+
+Routing table size: 101 entries
+Number of batches: 10
+
+Routing table size: 101 entries
+Number of batches: 10
+
+Routing table size: 101 entries
+Number of batches: 10
+
+
+CPU forwarding time: 2041.12 ms
+CPU Parallel forwarding time: 2036.24 ms
+
+=== GPU Tests WITH Pinned Memory ===
+
+CPU forwarding time: 2042.4 ms
+CPU Parallel forwarding time: 2030.04 ms
+
+=== GPU Tests WITH Pinned Memory ===
+
+CPU forwarding time: 2039.14 ms
+CPU Parallel forwarding time: 2035.11 ms
+
+=== GPU Tests WITH Pinned Memory ===
+
+CPU forwarding time: 2042.87 ms
+CPU Parallel forwarding time: 2031.38 ms
+
+=== GPU Tests WITH Pinned Memory ===
+GPU LPM Timing (pinned=YES):
+  H2D transfer: 15.1054 ms
+  Kernel exec:  1.76682 ms
+  D2H transfer: 16.9989 ms
+  Total GPU:    33.8712 ms
+
+  AoS->SoA + pinned alloc: 664.559 ms
+  GPU forward function:    36.51 ms
+GPU LPM forwarding total time: 701.069 ms
+GPU LPM Timing (pinned=YES):
+  H2D transfer: 16.8242 ms
+  Kernel exec:  1.62259 ms
+  D2H transfer: 18.8401 ms
+  Total GPU:    37.2869 ms
+
+GPU LPM Timing (pinned=YES):
+  H2D transfer: 12.7506 ms
+  Kernel exec:  1.60589 ms
+  D2H transfer: 17.673 ms
+  Total GPU:    32.0295 ms
+
+  AoS->SoA + pinned alloc: 647.838 ms
+  GPU forward function:    42.0532 ms
+GPU LPM forwarding total time: 689.892 ms
+  AoS->SoA + pinned alloc: 712.095 ms
+  GPU forward function:    35.8852 ms
+GPU LPM forwarding total time: 747.981 ms
+GPU LPM Timing (pinned=YES):
+  H2D transfer: 5.74202 ms
+  Kernel exec:  1.73744 ms
+  D2H transfer: 13.4648 ms
+  Total GPU:    20.9443 ms
+
+  AoS->SoA + pinned alloc: 527.949 ms
+  GPU forward function:    23.024 ms
+GPU LPM forwarding total time: 550.973 ms
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=YES):
+  H2D transfer: 5.77142 ms
+  Kernel exec:  1.56022 ms
+  D2H transfer: 14.6465 ms
+  Total GPU:    21.9782 ms
+
+  AoS->SoA + pinned alloc: 188.467 ms
+  GPU forward function:    26.4963 ms
+GPU Bloom forwarding total time: 214.964 ms
+
+=== GPU Tests WITHOUT Pinned Memory ===
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=YES):
+  H2D transfer: 11.3885 ms
+  Kernel exec:  1.55606 ms
+  D2H transfer: 15.7152 ms
+  Total GPU:    28.6598 ms
+
+  AoS->SoA + pinned alloc: 188.694 ms
+  GPU forward function:    34.4005 ms
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=YES):
+GPU Bloom forwarding total time: 223.095 ms
+
+=== GPU Tests WITHOUT Pinned Memory ===
+  H2D transfer: 12.962 ms
+  Kernel exec:  1.51568 ms
+  D2H transfer: 15.6508 ms
+  Total GPU:    30.1284 ms
+
+  AoS->SoA + pinned alloc: 188.265 ms
+  GPU forward function:    36.0746 ms
+GPU Bloom forwarding total time: 224.34 ms
+
+=== GPU Tests WITHOUT Pinned Memory ===
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=YES):
+  H2D transfer: 5.76022 ms
+  Kernel exec:  1.55942 ms
+  D2H transfer: 13.6832 ms
+  Total GPU:    21.0028 ms
+
+  AoS->SoA + pinned alloc: 185.565 ms
+  GPU forward function:    24.9391 ms
+GPU Bloom forwarding total time: 210.504 ms
+
+=== GPU Tests WITHOUT Pinned Memory ===
+GPU LPM Timing (pinned=NO):
+  H2D transfer: 16.3231 ms
+  Kernel exec:  1.56179 ms
+  D2H transfer: 11.1758 ms
+  Total GPU:    29.0607 ms
+
+  AoS->SoA (no pinned):    105.856 ms
+  GPU forward function:    31.1445 ms
+GPU LPM forwarding total time: 137.001 ms
+GPU LPM Timing (pinned=NO):
+  H2D transfer: 16.0964 ms
+  Kernel exec:  1.55907 ms
+  D2H transfer: 11.6017 ms
+  Total GPU:    29.2572 ms
+
+  AoS->SoA (no pinned):    105.444 ms
+  GPU forward function:    31.6084 ms
+GPU LPM forwarding total time: 137.053 ms
+GPU LPM Timing (pinned=NO):
+  H2D transfer: 18.6831 ms
+  Kernel exec:  1.55014 ms
+  D2H transfer: 11.0868 ms
+  Total GPU:    31.3201 ms
+
+  AoS->SoA (no pinned):    105.254 ms
+  GPU forward function:    33.1776 ms
+GPU LPM forwarding total time: 138.431 ms
+GPU LPM Timing (pinned=NO):
+  H2D transfer: 19.8673 ms
+  Kernel exec:  1.5561 ms
+  D2H transfer: 10.8927 ms
+  Total GPU:    32.3161 ms
+
+  AoS->SoA (no pinned):    104.262 ms
+  GPU forward function:    34.8148 ms
+GPU LPM forwarding total time: 139.077 ms
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=NO):
+  H2D transfer: 16.0157 ms
+  Kernel exec:  1.52845 ms
+  D2H transfer: 11.1942 ms
+  Total GPU:    28.7384 ms
+
+GPU Bloom forwarding total time: 137.968 ms
+
+=== Performance Comparison ===
+GPU LPM speedup with pinned memory: -411.727%
+GPU Bloom speedup with pinned memory: -55.8072%
+
+Primi 5 risultati per debug:
+Packet 0 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xe3e12de5
+Packet 1 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x21760881
+Packet 2 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xa2dada9
+Packet 3 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xd391517e
+Packet 4 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x88364222
+
+Verifying correctness...
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=NO):
+  H2D transfer: 15.9079 ms
+  Kernel exec:  1.5297 ms
+  D2H transfer: 11.6244 ms
+  Total GPU:    29.062 ms
+
+GPU Bloom forwarding total time: 137.318 ms
+
+=== Performance Comparison ===
+GPU LPM speedup with pinned memory: -403.378%
+GPU Bloom speedup with pinned memory: -62.4652%
+
+Primi 5 risultati per debug:
+Packet 0 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xe3e12de5
+Packet 1 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x21760881
+Packet 2 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xa2dada9
+Packet 3 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xd391517e
+Packet 4 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x88364222
+
+Verifying correctness...
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=NO):
+  H2D transfer: 18.3585 ms
+  Kernel exec:  1.51683 ms
+  D2H transfer: 11.1032 ms
+  Total GPU:    30.9786 ms
+
+GPU Bloom forwarding total time: 139.053 ms
+
+=== Performance Comparison ===
+GPU LPM speedup with pinned memory: -440.326%
+GPU Bloom speedup with pinned memory: -61.3339%
+
+Primi 5 risultati per debug:
+Packet 0 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xe3e12de5
+Packet 1 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x21760881
+Packet 2 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xa2dada9
+Packet 3 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xd391517e
+Packet 4 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x88364222
+
+Verifying correctness...
+Unique prefix lengths: 4 (out of 33 possible)
+GPU Bloom Timing (pinned=NO):
+  H2D transfer: 17.2292 ms
+  Kernel exec:  1.51862 ms
+  D2H transfer: 10.2522 ms
+  Total GPU:    29 ms
+
+GPU Bloom forwarding total time: 138.681 ms
+
+=== Performance Comparison ===
+GPU LPM speedup with pinned memory: -296.165%
+GPU Bloom speedup with pinned memory: -51.7904%
+
+Primi 5 risultati per debug:
+Packet 0 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xe3e12de5
+Packet 1 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x21760881
+Packet 2 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xa2dada9
+Packet 3 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0xd391517e
+Packet 4 - CPU out_if=9999, GPU LPM out_if=9999, GPU Bloom out_if=9999, dst_ip=0x88364222
+
+Verifying correctness...
+
+ All tests passed!
+
+
+========================================
+=== MULTI-BATCH TEST (streaming simulation) ===
+========================================
+
+--- WITH Pinned Memory (reused 10 times) ---
+
+ All tests passed!
+
+
+========================================
+=== MULTI-BATCH TEST (streaming simulation) ===
+========================================
+
+--- WITH Pinned Memory (reused 10 times) ---
+
+ All tests passed!
+
+
+========================================
+=== MULTI-BATCH TEST (streaming simulation) ===
+========================================
+
+--- WITH Pinned Memory (reused 10 times) ---
+
+ All tests passed!
+
+
+========================================
+=== MULTI-BATCH TEST (streaming simulation) ===
+========================================
+
+--- WITH Pinned Memory (reused 10 times) ---
+  Initial allocation: 187.568 ms
+  Processing 10 batches: 374.229 ms
+  Average per batch: 37.4229 ms
+  Total time: 561.797 ms
+
+--- WITHOUT Pinned Memory (allocate 10 times) ---
+  Initial allocation: 186.336 ms
+  Processing 10 batches: 368.117 ms
+  Average per batch: 36.8117 ms
+  Total time: 554.453 ms
+
+--- WITHOUT Pinned Memory (allocate 10 times) ---
+  Initial allocation: 185.522 ms
+  Processing 10 batches: 377.691 ms
+  Average per batch: 37.7691 ms
+  Total time: 563.213 ms
+
+--- WITHOUT Pinned Memory (allocate 10 times) ---
+  Initial allocation: 186.108 ms
+  Processing 10 batches: 381.425 ms
+  Average per batch: 38.1425 ms
+  Total time: 567.533 ms
+
+--- WITHOUT Pinned Memory (allocate 10 times) ---
+  Total time: 1345.07 ms
+  Average per batch: 134.507 ms
+
+=== MULTI-BATCH RESULTS ===
+Pinned memory speedup: 58.7788%
+Time saved: 790.613 ms
+Pinned memory IS beneficial for multi-batch processing!
+
+========================================
+
+  Total time: 1353.64 ms
+  Average per batch: 135.364 ms
+
+=== MULTI-BATCH RESULTS ===
+Pinned memory speedup: 58.4973%
+Time saved: 791.842 ms
+Pinned memory IS beneficial for multi-batch processing!
+
+========================================
+
+  Total time: 1365.91 ms
+  Average per batch: 136.591 ms
+
+=== MULTI-BATCH RESULTS ===
+Pinned memory speedup: 58.7665%
+Time saved: 802.698 ms
+Pinned memory IS beneficial for multi-batch processing!
+
+========================================
+
+  Total time: 1355.48 ms
+  Average per batch: 135.548 ms
+
+=== MULTI-BATCH RESULTS ===
+Pinned memory speedup: 58.1304%
+Time saved: 787.945 ms
+Pinned memory IS beneficial for multi-batch processing!
+
+========================================
+
+Collecting data...
+Generating '/tmp/nsys-report-8296.qdstrm'
+[1/1] [0%                          ] gpu_routing_nsys.nsys-rep[1/1] [0%                          ] gpu_routing_nsys.nsys-rep[1/1] [5%                          ] gpu_routing_nsys.nsys-rep[1/1] [6%                          ] gpu_routing_nsys.nsys-rep[1/1] [7%                          ] gpu_routing_nsys.nsys-rep[1/1] [8%                          ] gpu_routing_nsys.nsys-rep[1/1] [==========47%               ] gpu_routing_nsys.nsys-rep[1/1] [===============67%          ] gpu_routing_nsys.nsys-rep[1/1] [========================100%] gpu_routing_nsys.nsys-rep[1/1] [========================100%] gpu_routing_nsys.nsys-rep
+Generated:
+    /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.nsys-rep
+
+=== Profiling completed, checking files ===
+-rw-rw-r-- 1 gpu_group2 gpu_group2 496K Jan 23 11:26 /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.nsys-rep
+
+=== Generating stats from .nsys-rep ===
+SUCCESS: Summary generated in gpu_routing_nsys_summary.txt
+
+=== First 50 lines of summary ===
+Generating SQLite file /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.sqlite from /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.nsys-rep
+Processing [/home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.sqlite] with [/share/apps/hpc_sdk/Linux_x86_64/25.1/profilers/Nsight_Systems/host-linux-x64/reports/nvtx_sum.py]... 
+SKIPPED: /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.sqlite does not contain NV Tools Extension (NVTX) data.
+
+Processing [/home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.sqlite] with [/share/apps/hpc_sdk/Linux_x86_64/25.1/profilers/Nsight_Systems/host-linux-x64/reports/osrt_sum.py]... 
+
+ ** OS Runtime Summary (osrt_sum):
+
+ Time (%)  Total Time (ns)  Num Calls      Avg (ns)          Med (ns)         Min (ns)        Max (ns)       StdDev (ns)             Name         
+ --------  ---------------  ---------  ----------------  ----------------  --------------  --------------  ---------------  ----------------------
+     60.7   40,079,308,870        438      91,505,271.4       6,457,699.0           1,086  11,743,172,052    645,008,249.2  poll                  
+     18.0   11,879,446,836          1  11,879,446,836.0  11,879,446,836.0  11,879,446,836  11,879,446,836              0.0  sigwait               
+     17.9   11,809,270,163          7   1,687,038,594.7         124,538.0         110,983  11,743,755,760  4,434,624,392.6  pthread_cond_wait     
+      2.9    1,926,868,581      8,664         222,399.4          33,971.5           1,192      73,608,030      1,953,719.1  ioctl                 
+      0.3      215,517,486        560         384,852.7          12,191.0           2,018       6,126,799      1,187,270.6  mmap                  
+      0.1       66,650,277          1      66,650,277.0      66,650,277.0      66,650,277      66,650,277              0.0  pthread_cond_timedwait
+      0.1       35,285,149         11       3,207,740.8           2,668.0           2,043       8,832,548      4,447,129.8  pthread_cond_broadcast
+      0.1       33,107,560         14       2,364,825.7           7,990.0           3,185      11,283,896      4,085,108.9  pipe2                 
+      0.0       10,341,244        172          60,123.5          12,468.0           7,835       1,775,612        261,235.7  mmap64                
+      0.0        7,302,076        396          18,439.6           1,242.5           1,079       1,555,384        111,733.1  write                 
+      0.0        3,639,901        509           7,151.1           5,690.0           3,782          26,927          3,303.4  munmap                
+      0.0        2,597,230        336           7,729.9           6,685.5           3,089          32,962          3,301.9  open64                
+      0.0        2,083,105         13         160,238.8         121,332.0          47,305         421,280        148,594.4  pthread_create        
+      0.0        1,884,757        237           7,952.6           5,190.0           2,463         231,645         15,719.7  fopen                 
+      0.0          989,820        317           3,122.5           1,875.0           1,067          25,823          3,333.2  read                  
+      0.0          698,587          2         349,293.5         349,293.5         212,787         485,800        193,049.3  pthread_join          
+      0.0          629,140        234           2,688.6           1,404.5           1,132          12,779          2,848.6  fflush                
+      0.0          505,573          1         505,573.0         505,573.0         505,573         505,573              0.0  fork                  
+      0.0          500,764        209           2,396.0           2,098.0           1,334          15,366          1,256.7  fclose                
+      0.0          376,292        293           1,284.3           1,118.0             999           6,686            616.6  fcntl                 
+      0.0          311,830         12          25,985.8           4,758.0           1,600          73,392         33,462.1  fgets                 
+      0.0          207,332         19          10,912.2           8,893.0           5,117          36,816          7,322.9  connect               
+      0.0          185,968         24           7,748.7           7,079.0           1,248          27,037          5,886.7  send                  
+      0.0          179,801         26           6,915.4           6,210.0           3,426          13,565          2,916.0  socket                
+      0.0          149,923         25           5,996.9           6,128.0           2,595          10,301          2,189.1  open                  
+      0.0          125,251         45           2,783.4           1,787.0           1,017          11,326          2,675.7  fwrite                
+      0.0          115,717         23           5,031.2           4,609.0           2,557          11,217          2,405.8  stat                  
+      0.0          114,802          8          14,350.3          13,593.0           7,368          21,500          6,712.1  fread                 
+      0.0          106,222         37           2,870.9           1,496.0           1,000          26,019          4,319.6  recv                  
+      0.0           46,589         12           3,882.4           3,342.0           2,698           7,916          1,532.0  writev                
+      0.0           41,880         27           1,551.1           1,281.0           1,005           3,730            715.4  sigaction             
+      0.0           30,685         27           1,136.5           1,030.0           1,000           2,998            379.8  dup                   
+      0.0           30,589          4           7,647.3           6,878.5           6,095          10,737          2,183.8  accept4               
+      0.0           28,864          4           7,216.0           7,326.5           6,280           7,931            692.0  putc                  
+      0.0           20,568          7           2,938.3           2,637.0           1,889           5,036          1,129.2  bind                  
+      0.0           12,995          7           1,856.4           1,784.0           1,270           2,875            504.4  listen                
+      0.0            8,753          1           8,753.0           8,753.0           8,753           8,753              0.0  pthread_kill          
+      0.0            5,402          1           5,402.0           5,402.0           5,402           5,402              0.0  pipe                  
+      0.0            4,081          1           4,081.0           4,081.0           4,081           4,081              0.0  fstat64               
+      0.0            3,135          1           3,135.0           3,135.0           3,135           3,135              0.0  pthread_cond_signal   
+
+=== Generated files ===
+-rw-rw-r-- 1 gpu_group2 gpu_group2 496K Jan 23 11:26 /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.nsys-rep
+-rw-r--r-- 1 gpu_group2 gpu_group2 2.6M Jan 23 11:26 /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys.sqlite
+-rw-r--r-- 1 gpu_group2 gpu_group2  17K Jan 23 11:26 /home/gpu_group2/s331615/GpuProgramming/Project/GPURoutingProject/gpu_routing_nsys_summary.txt
+
+Main report for GUI: gpu_routing_nsys.nsys-rep
+
+=== Profiling complete ===
